@@ -1,0 +1,12 @@
+{
+  "name": "logiclab",
+  "version": "1.0.0",
+  "description": "Simulateur pédagogique de circuits logiques pour le Bac Pro CIEL (hors ligne, HTML/CSS/JS pur)",
+  "license": "EUPL-1.2",
+  "author": "Yahn LE PRETTRE - Formaxion Landes",
+  "private": true,
+  "scripts": {
+    "build": "node tools/build.js",
+    "test": "node tests/logic.test.js && node tests/engine.test.js && node tests/synth.test.js && node tests/t_sc.js"
+  }
+}
