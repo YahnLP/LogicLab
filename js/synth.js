@@ -18,8 +18,11 @@ NS.twoLevel = function (vars, values, style) {
 NS.synthesize = function (c, spec, opt) {
   opt = opt || {}; const style = opt.style || 'andor', vars = spec.vars, nV = vars.length;
   if (opt.replace) { c.parts = []; c.wires = []; c.junctions = []; }
+  const w0 = c.wires.length;
   let y0 = opt.y; if (y0 === undefined) { y0 = 40; c.parts.forEach(p => { const e = NS.extOf(p) || NS.PARTS[p.type].ext || [0, 0, 0, 0]; y0 = Math.max(y0, p.y + e[3] + 60); }); if (!c.parts.length) y0 = 40; }
-  const x0 = opt.x === undefined ? 60 : opt.x, XN = x0 + 170, X1 = x0 + 360, X2 = x0 + 540, XO = x0 + 700;
+  const x0 = opt.x === undefined ? 60 : opt.x;
+  const maxT = Math.max(1, ...spec.outputs.map(o => { const t = NS.twoLevel(vars, o.values, style); return t.terms ? t.terms.length : 1; }));
+  const XN = x0 + 170, X1 = XN + 130 + 12 * (2 * nV + 2), X2 = X1 + 130 + 12 * (maxT + 2), XO = X2 + 160;
   const gateOf = { andor: ['and', 'or'], nand: ['nand', 'nand'], orand: ['or', 'and'], nor: ['nor', 'nor'] }[style];
   /* sources */
   const src = vars.map((nm, i) => { let p = c.byRef(nm); if (!p) p = c.add('switch', x0, y0 + 20 + i * 70, {}, nm); return p; });
@@ -28,7 +31,7 @@ NS.synthesize = function (c, spec, opt) {
   const mkInv = (p, pin, x, y) => { if (!invOnly) { const k = c.add('not', x, y, {}); c.link(p, pin, k, 'E'); return k; } const k = c.add(gateOf[0], x, y, { n: 2 }); c.link(p, pin, k, 'E1'); c.link(p, pin, k, 'E2'); return k; };
   const notG = {}; const litPin = (l, neg) => { /* neg = vrai : complément de la variable */
     if (!neg) return [src[l.v], 'S'];
-    if (!notG[l.v]) notG[l.v] = mkInv(src[l.v], 'S', XN, src[l.v].y); return [notG[l.v], 'S']; };
+    if (!notG[l.v]) notG[l.v] = mkInv(src[l.v], 'S', XN, src[l.v].y + 35); return [notG[l.v], 'S']; };
   const shared = {}; let rowY = y0 + 20; const created = [];
   const gate = (type, ins, x, y) => { const k = c.add(type, x, y, { n: Math.max(2, ins.length) }); ins.forEach((pp, i) => { const pin = ins.length === 1 ? 'E' : 'E' + (i + 1); c.link(pp[0], pp[1], k, pin); }); created.push(k); return k; };
   const hOf = n => Math.max(n, 2) * 20;
@@ -48,11 +51,12 @@ NS.synthesize = function (c, spec, opt) {
     } else {
       /* regroupement par 8 au plus */
       let level = sig, stage = 0;
-      while (level.length > 1) { const nxt = []; for (let i = 0; i < level.length; i += 8) { const grp = level.slice(i, i + 8); if (grp.length === 1) { nxt.push(grp[0]); continue; } const yy = Math.round(grp.reduce((s, q) => s + q[0].y, 0) / grp.length / 10) * 10; const k = gate(gateOf[1], grp, X2 + stage * 120, yy); nxt.push([k, 'S']); } level = nxt; stage++; if (stage > 3) break; }
+      while (level.length > 1) { const nxt = []; for (let i = 0; i < level.length; i += 8) { const grp = level.slice(i, i + 8); if (grp.length === 1) { nxt.push(grp[0]); continue; } const yy = Math.round(grp.reduce((s, q) => s + q[0].y, 0) / grp.length / 10) * 10; const k = gate(gateOf[1], grp, X2 + stage * 150, yy); nxt.push([k, 'S']); } level = nxt; stage++; if (stage > 3) break; }
       outPin = level[0];
     }
     const yy = outPin[0].y; if (!led) led = c.add('led', XO + 60, yy, {}, o.name); c.link(outPin[0], outPin[1], led, 'E'); rowY = Math.max(rowY, yy + 50);
   });
+  NS.autoRoute(c, w0);
   return created;
 };
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -87,6 +87,14 @@ class Editor {
     for (const w of this.c.wires) for (const e of [w.a, w.b]) if (e.j) cnt.set(e.j, (cnt.get(e.j) || 0) + 1);
     const pc = new Map(); for (const w of this.c.wires) for (const e of [w.a, w.b]) if (e.c) { const k = e.c + ':' + e.p; pc.set(k, (pc.get(k) || 0) + 1); }
     for (const [k, n] of pc) if (n >= 2) { const [id, pi] = k.split(':'); const q = this.c.endPos({ c: id, p: +pi }); if (q) this.gJ.appendChild(svgEl('circle', { cx: q[0], cy: q[1], r: 4.2, class: 'junc pinjunc' })); }
+    /* points de dérivation : là où des fils issus de la même broche de sortie se séparent */
+    const grp = new Map();
+    for (const w of this.c.wires) for (const [e, isA] of [[w.a, true], [w.b, false]]) { if (!e.c) continue; const pt = this.c.part(e.c), pin = pt && NS.pinsOf(pt)[e.p]; if (pin && pin.dir === 'out') { const k = e.c + ':' + e.p; if (!grp.has(k)) grp.set(k, []); grp.get(k).push([w, isA]); } }
+    const grid = (w, isA) => { let pts = this.expand(w); if (!isA) pts = pts.slice().reverse(); const out = []; for (let i = 0; i < pts.length - 1; i++) { const a = pts[i], b = pts[i + 1], n = Math.max(1, Math.round(Math.max(Math.abs(a[0] - b[0]), Math.abs(a[1] - b[1])) / 2)); for (let k = 0; k < n; k++) out.push([Math.round(a[0] + (b[0] - a[0]) * k / n), Math.round(a[1] + (b[1] - a[1]) * k / n)]); } out.push(pts[pts.length - 1]); return out; };
+    const seen = new Set();
+    for (const list of grp.values()) { if (list.length < 2) continue; const paths = list.map(([w, isA]) => grid(w, isA));
+      for (let i = 0; i < paths.length; i++) for (let j = i + 1; j < paths.length; j++) { const A = paths[i], B = paths[j]; let n = 0; while (n < A.length && n < B.length && A[n][0] === B[n][0] && A[n][1] === B[n][1]) n++;
+        if (n > 6 && n < Math.max(A.length, B.length)) { const q = A[n - 1], key = q[0] + ',' + q[1]; if (!seen.has(key)) { seen.add(key); this.gJ.appendChild(svgEl('circle', { cx: q[0], cy: q[1], r: 3.2, class: 'junc' })); } } } }
     for (const j of this.c.junctions) { const n = cnt.get(j.id) || 0; const dot = svgEl('circle', { cx: j.x, cy: j.y, r: n >= 3 ? 4.5 : 3.2, class: 'junc', 'data-jid': j.id }); if (this.selJ === j.id) dot.setAttribute('style', 'fill:#f59e0b'); this.gJ.appendChild(dot); }
   }
   /* position et alignement de l'étiquette de niveau d'une broche (vers l'extérieur du composant) */

@@ -750,6 +750,61 @@ NS.deserialize = function (o) {
 
 </script>
 <script>
+/* route.js — tracé automatique des fils d'un schéma généré (synthèse, TP) : chaque signal a sa propre piste verticale,
+   les fils ne passent pas à travers les portes et deux signaux différents ne se superposent jamais. */
+(function (g) {
+'use strict';
+const NS = g.NS = g.NS || {};
+const MARGIN = 12;
+NS.autoRoute = function (c, from) {
+  const ws = c.wires.slice(from || 0).filter(w => w.a.c && w.b.c && !(w.mid && w.mid.length));
+  const items = [];
+  ws.forEach(w => {
+    let a = w.a, b = w.b, swapped = false; const pa = NS.pinsOf(c.part(a.c))[a.p], pb = NS.pinsOf(c.part(b.c))[b.p];
+    if (pa.dir !== 'out') { [a, b] = [b, a]; swapped = true; }
+    const pA = NS.pinsOf(c.part(a.c))[a.p], pB = NS.pinsOf(c.part(b.c))[b.p]; if (pA.dir !== 'out' || pB.dir !== 'in') return;
+    const P = c.endPos(a), Q = c.endPos(b); if (Q[0] - P[0] < 40) return;
+    items.push({ w, swapped, P, Q, net: a.c + ':' + a.p });
+  });
+  if (!items.length) return;
+  const boxes = c.parts.map(p => { const e = NS.extOf(p) || NS.PARTS[p.type].ext || [0, 0, 0, 0]; return [p.x + e[0] - 4, p.y + e[1] - MARGIN, p.x + e[2] + 4, p.y + e[3] + 6]; });
+  const hits = (x1, x2, y) => { const lo = Math.min(x1, x2), hi = Math.max(x1, x2); return boxes.some(b => y > b[1] && y < b[3] && hi > b[0] && lo < b[2]); };
+  const LANE = 12;
+  const bySrc = {}, byDst = {};
+  items.forEach(it => { (bySrc[it.P[0]] = bySrc[it.P[0]] || new Map()).set(it.net, it.P[1]); (byDst[it.Q[0]] = byDst[it.Q[0]] || new Map()).set(it.net, it.P[1]); });
+  /* essaie plusieurs ordres de pistes et garde celui qui crée le moins de croisements */
+  function run(dstDir, srcDir) {
+    const srcRank = new Map(), dstRank = new Map();
+    Object.keys(bySrc).forEach(x => { [...bySrc[x].entries()].sort((a, b) => srcDir * (a[1] - b[1])).forEach(([n], i) => srcRank.set(x + '|' + n, i)); });
+    Object.keys(byDst).forEach(x => { [...byDst[x].entries()].sort((a, b) => dstDir * (a[1] - b[1])).forEach(([n], i) => dstRank.set(x + '|' + n, i)); });
+    const segs = [], res = [];
+    const clash = (isH, k, a, b, net) => { const lo = Math.min(a, b), hi = Math.max(a, b); return segs.some(s => s.h === isH && s.k === k && s.net !== net && hi > s.a && lo < s.b); };
+    const add = (isH, k, a, b, net) => { segs.push({ h: isH, k, a: Math.min(a, b), b: Math.max(a, b), net }); };
+    items.slice().sort((u, v) => u.Q[0] - v.Q[0] || u.P[1] - v.P[1]).forEach(it => {
+      const { P, Q, net } = it, xs = P[0] + 16 + LANE * srcRank.get(P[0] + '|' + net), xd = Q[0] - 16 - LANE * dstRank.get(Q[0] + '|' + net);
+      if (xd <= xs) return;
+      const cand = [P[1], Q[1]]; for (let k = 1; k <= 40; k++) { cand.push(P[1] - 10 * k, P[1] + 10 * k); }
+      for (const yc of cand) {
+        if (hits(xs, xd, yc) || clash(true, yc, xs, xd, net) || clash(true, Q[1], xd, Q[0], net) || clash(false, xs, P[1], yc, net) || clash(false, xd, yc, Q[1], net)) continue;
+        const pts = [[xs, P[1]], [xs, yc], [xd, yc], [xd, Q[1]]], clean = [];
+        pts.forEach(p => { const l = clean[clean.length - 1]; if (!l || l[0] !== p[0] || l[1] !== p[1]) clean.push(p); });
+        res.push({ it, mid: it.swapped ? clean.slice().reverse() : clean });
+        add(true, P[1], P[0], xs, net); add(false, xs, P[1], yc, net); add(true, yc, xs, xd, net); add(false, xd, yc, Q[1], net); add(true, Q[1], xd, Q[0], net);
+        return;
+      }
+    });
+    let cross = 0; const H = segs.filter(s => s.h), V = segs.filter(s => !s.h);
+    H.forEach(h => V.forEach(v => { if (h.net !== v.net && v.k > h.a && v.k < h.b && h.k > v.a && h.k < v.b) cross++; }));
+    return { res, cross, missed: items.length - res.length };
+  }
+  let best = null;
+  [[-1, 1], [1, 1], [-1, -1], [1, -1]].forEach(([d, s]) => { const r = run(d, s); if (!best || r.missed < best.missed || (r.missed === best.missed && r.cross < best.cross)) best = r; });
+  best.res.forEach(r => { r.it.w.mid = r.mid; });
+};
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script>
 /* engine.js — simulation logique à 3 états (0, 1, ? = indéterminé), horloges, bascules D, historique pour le chronogramme.
    Niveaux : 0 = niveau bas, 1 = niveau haut, 2 = indéterminé (entrée non reliée, conflit de sorties, boucle instable). */
 (function (g) {
@@ -1017,8 +1072,11 @@ NS.twoLevel = function (vars, values, style) {
 NS.synthesize = function (c, spec, opt) {
   opt = opt || {}; const style = opt.style || 'andor', vars = spec.vars, nV = vars.length;
   if (opt.replace) { c.parts = []; c.wires = []; c.junctions = []; }
+  const w0 = c.wires.length;
   let y0 = opt.y; if (y0 === undefined) { y0 = 40; c.parts.forEach(p => { const e = NS.extOf(p) || NS.PARTS[p.type].ext || [0, 0, 0, 0]; y0 = Math.max(y0, p.y + e[3] + 60); }); if (!c.parts.length) y0 = 40; }
-  const x0 = opt.x === undefined ? 60 : opt.x, XN = x0 + 170, X1 = x0 + 360, X2 = x0 + 540, XO = x0 + 700;
+  const x0 = opt.x === undefined ? 60 : opt.x;
+  const maxT = Math.max(1, ...spec.outputs.map(o => { const t = NS.twoLevel(vars, o.values, style); return t.terms ? t.terms.length : 1; }));
+  const XN = x0 + 170, X1 = XN + 130 + 12 * (2 * nV + 2), X2 = X1 + 130 + 12 * (maxT + 2), XO = X2 + 160;
   const gateOf = { andor: ['and', 'or'], nand: ['nand', 'nand'], orand: ['or', 'and'], nor: ['nor', 'nor'] }[style];
   /* sources */
   const src = vars.map((nm, i) => { let p = c.byRef(nm); if (!p) p = c.add('switch', x0, y0 + 20 + i * 70, {}, nm); return p; });
@@ -1027,7 +1085,7 @@ NS.synthesize = function (c, spec, opt) {
   const mkInv = (p, pin, x, y) => { if (!invOnly) { const k = c.add('not', x, y, {}); c.link(p, pin, k, 'E'); return k; } const k = c.add(gateOf[0], x, y, { n: 2 }); c.link(p, pin, k, 'E1'); c.link(p, pin, k, 'E2'); return k; };
   const notG = {}; const litPin = (l, neg) => { /* neg = vrai : complément de la variable */
     if (!neg) return [src[l.v], 'S'];
-    if (!notG[l.v]) notG[l.v] = mkInv(src[l.v], 'S', XN, src[l.v].y); return [notG[l.v], 'S']; };
+    if (!notG[l.v]) notG[l.v] = mkInv(src[l.v], 'S', XN, src[l.v].y + 35); return [notG[l.v], 'S']; };
   const shared = {}; let rowY = y0 + 20; const created = [];
   const gate = (type, ins, x, y) => { const k = c.add(type, x, y, { n: Math.max(2, ins.length) }); ins.forEach((pp, i) => { const pin = ins.length === 1 ? 'E' : 'E' + (i + 1); c.link(pp[0], pp[1], k, pin); }); created.push(k); return k; };
   const hOf = n => Math.max(n, 2) * 20;
@@ -1047,11 +1105,12 @@ NS.synthesize = function (c, spec, opt) {
     } else {
       /* regroupement par 8 au plus */
       let level = sig, stage = 0;
-      while (level.length > 1) { const nxt = []; for (let i = 0; i < level.length; i += 8) { const grp = level.slice(i, i + 8); if (grp.length === 1) { nxt.push(grp[0]); continue; } const yy = Math.round(grp.reduce((s, q) => s + q[0].y, 0) / grp.length / 10) * 10; const k = gate(gateOf[1], grp, X2 + stage * 120, yy); nxt.push([k, 'S']); } level = nxt; stage++; if (stage > 3) break; }
+      while (level.length > 1) { const nxt = []; for (let i = 0; i < level.length; i += 8) { const grp = level.slice(i, i + 8); if (grp.length === 1) { nxt.push(grp[0]); continue; } const yy = Math.round(grp.reduce((s, q) => s + q[0].y, 0) / grp.length / 10) * 10; const k = gate(gateOf[1], grp, X2 + stage * 150, yy); nxt.push([k, 'S']); } level = nxt; stage++; if (stage > 3) break; }
       outPin = level[0];
     }
     const yy = outPin[0].y; if (!led) led = c.add('led', XO + 60, yy, {}, o.name); c.link(outPin[0], outPin[1], led, 'E'); rowY = Math.max(rowY, yy + 50);
   });
+  NS.autoRoute(c, w0);
   return created;
 };
 })(typeof window !== 'undefined' ? window : globalThis);
@@ -1147,6 +1206,14 @@ class Editor {
     for (const w of this.c.wires) for (const e of [w.a, w.b]) if (e.j) cnt.set(e.j, (cnt.get(e.j) || 0) + 1);
     const pc = new Map(); for (const w of this.c.wires) for (const e of [w.a, w.b]) if (e.c) { const k = e.c + ':' + e.p; pc.set(k, (pc.get(k) || 0) + 1); }
     for (const [k, n] of pc) if (n >= 2) { const [id, pi] = k.split(':'); const q = this.c.endPos({ c: id, p: +pi }); if (q) this.gJ.appendChild(svgEl('circle', { cx: q[0], cy: q[1], r: 4.2, class: 'junc pinjunc' })); }
+    /* points de dérivation : là où des fils issus de la même broche de sortie se séparent */
+    const grp = new Map();
+    for (const w of this.c.wires) for (const [e, isA] of [[w.a, true], [w.b, false]]) { if (!e.c) continue; const pt = this.c.part(e.c), pin = pt && NS.pinsOf(pt)[e.p]; if (pin && pin.dir === 'out') { const k = e.c + ':' + e.p; if (!grp.has(k)) grp.set(k, []); grp.get(k).push([w, isA]); } }
+    const grid = (w, isA) => { let pts = this.expand(w); if (!isA) pts = pts.slice().reverse(); const out = []; for (let i = 0; i < pts.length - 1; i++) { const a = pts[i], b = pts[i + 1], n = Math.max(1, Math.round(Math.max(Math.abs(a[0] - b[0]), Math.abs(a[1] - b[1])) / 2)); for (let k = 0; k < n; k++) out.push([Math.round(a[0] + (b[0] - a[0]) * k / n), Math.round(a[1] + (b[1] - a[1]) * k / n)]); } out.push(pts[pts.length - 1]); return out; };
+    const seen = new Set();
+    for (const list of grp.values()) { if (list.length < 2) continue; const paths = list.map(([w, isA]) => grid(w, isA));
+      for (let i = 0; i < paths.length; i++) for (let j = i + 1; j < paths.length; j++) { const A = paths[i], B = paths[j]; let n = 0; while (n < A.length && n < B.length && A[n][0] === B[n][0] && A[n][1] === B[n][1]) n++;
+        if (n > 6 && n < Math.max(A.length, B.length)) { const q = A[n - 1], key = q[0] + ',' + q[1]; if (!seen.has(key)) { seen.add(key); this.gJ.appendChild(svgEl('circle', { cx: q[0], cy: q[1], r: 3.2, class: 'junc' })); } } } }
     for (const j of this.c.junctions) { const n = cnt.get(j.id) || 0; const dot = svgEl('circle', { cx: j.x, cy: j.y, r: n >= 3 ? 4.5 : 3.2, class: 'junc', 'data-jid': j.id }); if (this.selJ === j.id) dot.setAttribute('style', 'fill:#f59e0b'); this.gJ.appendChild(dot); }
   }
   /* position et alignement de l'étiquette de niveau d'une broche (vers l'extérieur du composant) */
@@ -2101,7 +2168,7 @@ NS.evalChecks = function (sc, circuit, tp) {
 /* ---------- construction d'un schéma de portes à partir d'une expression (la structure suit l'équation) ---------- */
 /* spec = { vars:[noms], outputs:[{name, ast}] } ; opt = { x, y, fuse (NON-ET, NON-OU, NON-OU-EX), desc:{A:'texte'} }. Renvoie { gates, byKey } */
 NS.buildAst = function (c, spec, opt) {
-  opt = opt || {}; const fuse = opt.fuse !== false, x0 = opt.x === undefined ? 60 : opt.x, y0 = opt.y === undefined ? 40 : opt.y, STEP = 160;
+  opt = opt || {}; const fuse = opt.fuse !== false, x0 = opt.x === undefined ? 60 : opt.x, y0 = opt.y === undefined ? 40 : opt.y, STEP = 230, w0 = c.wires.length;
   const src = {}; spec.vars.forEach((nm, i) => { src[nm] = c.byRef(nm) || c.add('switch', x0, y0 + 20 + i * 70, { desc: (opt.desc && opt.desc[nm]) || '' }, nm); });
   const memo = new Map(), cols = {}, gates = []; let maxLvl = 0;
   const fold = (n) => { if (n.t === 'xor' && n.a.length > 2) { let acc = n.a[0]; for (let i = 1; i < n.a.length; i++) acc = { t: 'xor', a: [acc, n.a[i]] }; return acc; } return n; };
@@ -2127,6 +2194,7 @@ NS.buildAst = function (c, spec, opt) {
     if (!led) led = c.add(o.kind || 'led', x0 + 140 + (maxLvl + 1) * STEP, r.part.y, o.params || {}, o.name);
     c.link(r.part, 'S', led, 'E');
   });
+  NS.autoRoute(c, w0);
   return { gates, src };
 };
 /* entrées (interrupteurs) à gauche et sorties (LED) à droite, sans portes */

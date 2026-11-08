@@ -1,4 +1,4 @@
-const assert = require('assert'); const NS = require('./load')(['util.js', 'logic.js', 'parts.js', 'circuit.js', 'engine.js']);
+const assert = require('assert'); const NS = require('./load')(['util.js', 'logic.js', 'parts.js', 'circuit.js', 'route.js', 'engine.js']);
 let n = 0; const ok = s => { n++; console.log('ok  ' + s); };
 function mk(cb) { const c = new NS.Circuit(); cb(c); return c; }
 /* portes 2 entrées : toutes les tables */

@@ -1,4 +1,4 @@
-const assert = require('assert'); const NS = require('./load')(['util.js', 'logic.js', 'parts.js', 'circuit.js', 'engine.js', 'analysis.js', 'synth.js']);
+const assert = require('assert'); const NS = require('./load')(['util.js', 'logic.js', 'parts.js', 'circuit.js', 'route.js', 'engine.js', 'analysis.js', 'synth.js']);
 let n = 0; const ok = s => { n++; console.log('ok  ' + s); };
 const rng = NS.rng(11); let nf = 0;
 for (const style of Object.keys(NS.STYLES)) for (let k = 0; k < 60; k++) {
