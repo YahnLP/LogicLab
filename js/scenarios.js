@@ -57,7 +57,7 @@ NS.evalChecks = function (sc, circuit, tp) {
 /* ---------- construction d'un schéma de portes à partir d'une expression (la structure suit l'équation) ---------- */
 /* spec = { vars:[noms], outputs:[{name, ast}] } ; opt = { x, y, fuse (NON-ET, NON-OU, NON-OU-EX), desc:{A:'texte'} }. Renvoie { gates, byKey } */
 NS.buildAst = function (c, spec, opt) {
-  opt = opt || {}; const fuse = opt.fuse !== false, x0 = opt.x === undefined ? 60 : opt.x, y0 = opt.y === undefined ? 40 : opt.y, STEP = 160;
+  opt = opt || {}; const fuse = opt.fuse !== false, x0 = opt.x === undefined ? 60 : opt.x, y0 = opt.y === undefined ? 40 : opt.y, STEP = 230, w0 = c.wires.length;
   const src = {}; spec.vars.forEach((nm, i) => { src[nm] = c.byRef(nm) || c.add('switch', x0, y0 + 20 + i * 70, { desc: (opt.desc && opt.desc[nm]) || '' }, nm); });
   const memo = new Map(), cols = {}, gates = []; let maxLvl = 0;
   const fold = (n) => { if (n.t === 'xor' && n.a.length > 2) { let acc = n.a[0]; for (let i = 1; i < n.a.length; i++) acc = { t: 'xor', a: [acc, n.a[i]] }; return acc; } return n; };
@@ -83,6 +83,7 @@ NS.buildAst = function (c, spec, opt) {
     if (!led) led = c.add(o.kind || 'led', x0 + 140 + (maxLvl + 1) * STEP, r.part.y, o.params || {}, o.name);
     c.link(r.part, 'S', led, 'E');
   });
+  NS.autoRoute(c, w0);
   return { gates, src };
 };
 /* entrées (interrupteurs) à gauche et sorties (LED) à droite, sans portes */
