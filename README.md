@@ -16,21 +16,28 @@ Simulateur **hors ligne** (HTML/CSS/JS pur, aucune dépendance) : éditeur de sc
 | Lecture en direct | Fils vert épais (1), gris (0), orange pointillé (?), pastilles 0/1 sur chaque broche, table de la porte sélectionnée |
 | Onglets | Chronogramme (curseurs A/B, fenêtre, gel) · Table de vérité en direct · Équations (lue sur le schéma, formes canoniques, forme simplifiée) · Karnaugh (remplissage, groupements corrigés) · Concepteur (table → équation → schéma en ET/OU, NON-ET, OU/ET, NON-OU) |
 
-## TP (25 TP, avec variantes)
-1 · Portes logiques : `premier`, `et_ou`, `inverses`, `inconnue` (4 portes cachées)
-2 · Tables et équations : `lire` (3 schémas), `equ_schema` (3 équations), `suivre`, `depannage` (3 pannes)
-3 · Boole et Karnaugh : `demorgan`, `tout_nand`, `simplifier`, `karnaugh3`, `karnaugh4`, `indifferents` (segment a d'un afficheur BCD)
+## TD et TP
+Deux types de séances :
+- **TD** (travaux dirigés) : déroulé **guidé en étapes**. Chaque étape explique la notion (« À comprendre »), donne la consigne (« À faire »), un coup de pouce, et se **valide** seule. Questions avec aide.
+- **TP** (travaux pratiques) : cahier des charges seul, **sans cours ni pas à pas**, validation automatique du montage et des réponses. Chaque TP renvoie vers le TD correspondant.
+
+**TD (11)** : `td_premier`, `td_et_ou`, `td_inverses`, `td_lire`, `td_equ_schema`, `td_canoniques` (Σ, Π, mintermes, maxtermes), `td_demorgan`, `td_karnaugh3`, `td_alarme`, `td_generateur`, `td_div2`
+
+**TP (26, avec variantes)**
+1 · Portes logiques : `premier`, `et_ou`, `inverses`, `inconnue`
+2 · Tables et équations : `lire`, `canoniques`, `equ_schema`, `suivre`, `depannage`
+3 · Boole et Karnaugh : `demorgan`, `tout_nand`, `simplifier`, `karnaugh3`, `karnaugh4`, `indifferents`
 4 · Conception : `alarme`, `pompe`, `vote`, `va_et_vient`, `demi_add`, `add_complet`
 5 · Signaux et bascules : `generateur`, `horloges`, `combinaisons`, `div2`, `compteur`
 
-Chaque TP : sujet, objectifs, apport de cours, questions (table à remplir, équation à saisir, QCM, valeurs), critères vérifiés automatiquement sur le schéma, correction avec bouton « Appliquer la solution ».
+Chaque séance : sujet, objectifs, questions (table à remplir, équation à saisir, QCM, valeurs), critères vérifiés automatiquement sur le schéma, correction avec bouton « Appliquer la solution ».
 
 ## Développement
 ```
 npm run build   # assemble dist/logiclab.html
 npm test        # moteur logique, simulation, synthèse, et chaque TP (solution + critères + réponses)
 ```
-Sources : `js/logic.js` (expressions, Quine-McCluskey, Karnaugh), `js/engine.js` (simulation), `js/synth.js` (synthèse de schémas), `js/scenarios.js` (cadre des TP), `js/tp_*.js` (TP), `js/cours.js` (apports de cours).
+Sources : `js/logic.js` (expressions, Quine-McCluskey, Karnaugh), `js/engine.js` (simulation), `js/synth.js` (synthèse de schémas), `js/scenarios.js` (cadre des TP), `js/tp_*.js` (TP), `js/td.js` (TD), `js/cours.js` (apports de cours).
 
 ## Référentiel
 La matrice de couverture (menu **? Aide**) est **à valider** : elle a été établie de mémoire et doit être confrontée au référentiel officiel du Bac Pro CIEL.

@@ -12,6 +12,9 @@ NS.SCENARIOS.forEach(sc => {
     const c2 = NS.deserialize(NS.serialize(c)); sc.solve(c2, { tp });
     const after = NS.evalChecks(sc, c2, tp); after.filter(r => !r.ok).forEach(r => fail(tag + ' : critère KO après solution : ' + r.label));
     const ctx = NS.makeCtx(c2); ctx.tp = tp;
+    (sc.stages || []).forEach((st, k) => { if (st.check) { const r = NS.evalChecks({ checks: [st.check] }, c2, tp)[0]; if (!r.ok) fail(tag + ' étape ' + (k + 1) + ' KO après solution : ' + st.check.label); if (!st.fail) fail(tag + ' étape ' + (k + 1) + ' : message d\'échec manquant'); } });
+    if ((sc.kind === 'TD') && !(sc.stages && sc.stages.length >= 3)) fail(tag + ' : un TD doit avoir au moins 3 étapes');
+    if (sc.kind === 'TP' && sc.td && !NS.SCENARIOS.find(x => x.id === sc.td)) fail(tag + ' : TD associé introuvable');
     (sc.questions || []).forEach((q, i) => {
       let a;
       try {
