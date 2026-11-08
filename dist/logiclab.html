@@ -229,7 +229,7 @@ NS.h = function (tag, attrs, ...kids) {
   const svg = ['svg', 'g', 'path', 'rect', 'circle', 'line', 'text', 'polyline', 'polygon', 'ellipse', 'defs', 'marker', 'title'].includes(name) && (attrs && attrs.__svg || name === 'svg' || NS._inSvg);
   const el = svg ? document.createElementNS(SVGNS, name) : document.createElement(name);
   if (id) el.id = id; if (cls.length) el.setAttribute('class', cls.join(' '));
-  if (attrs && (typeof attrs !== 'object' || attrs.nodeType || Array.isArray(attrs) || typeof attrs === 'string')) { kids.unshift(attrs); attrs = null; }
+  if (attrs !== undefined && attrs !== null && attrs !== false && (typeof attrs !== 'object' || attrs.nodeType || Array.isArray(attrs) || typeof attrs === 'string')) { kids.unshift(attrs); attrs = null; }
   if (attrs) for (const k in attrs) {
     const v = attrs[k]; if (v == null || v === false || k === '__svg') continue;
     if (k === 'style' && typeof v === 'object') Object.assign(el.style, v);
