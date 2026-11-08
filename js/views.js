@@ -62,13 +62,14 @@ class EqView {
       const blk = h('div.eqblock', h('div', h('b', o.name), ' = '));
       const rows = [];
       rows.push(['Lue sur le schéma', read ? mono(NS.toHTML(read)) : h('span.muted', 'non disponible (entrée non reliée, boîte noire, bascule ou boucle)')]);
-      rows.push(['1ère forme canonique (somme de mintermes)', mint.length ? h('span', mono('Σ(' + mint.join(', ') + ')'), h('br'), mono(NS.toHTML(NS.canonSop(vars, values)))) : mono('0')]);
-      rows.push(['2e forme canonique (produit de maxtermes)', maxt.length ? h('span', mono('Π(' + maxt.join(', ') + ')'), h('br'), mono(NS.toHTML(NS.canonPos(vars, values)))) : mono('1')]);
+      const gl = t => h('div.gloss', t);
+      rows.push(['1ère forme canonique (somme de mintermes)', mint.length ? h('span', mono('Σ(' + mint.join(', ') + ')'), h('br'), mono(NS.toHTML(NS.canonSop(vars, values))), gl('Σ(…) : S vaut 1 pour les lignes n° ' + mint.join(', ') + ' de la table (numéro = combinaison lue en binaire, ' + vars[0] + ' en poids fort). Chaque ligne à 1 donne un produit (ET) de toutes les variables : un minterme. On les relie par des OU.')) : mono('0')]);
+      rows.push(['2e forme canonique (produit de maxtermes)', maxt.length ? h('span', mono('Π(' + maxt.join(', ') + ')'), h('br'), mono(NS.toHTML(NS.canonPos(vars, values))), gl('Π(…) : S vaut 0 pour les lignes n° ' + maxt.join(', ') + '. Chaque ligne à 0 donne une somme (OU) de toutes les variables, complémentées si elles valent 1 dans la ligne : un maxterme. On les relie par des ET.')) : mono('1')]);
       rows.push(['Forme simplifiée : somme de produits', mono(NS.toHTML(m.sop))]);
       rows.push(['Forme simplifiée : produit de sommes', mono(NS.toHTML(m.pos))]);
       rows.push(['Portes', 'Votre schéma : ' + gc.total + ' porte(s) · réalisation à deux niveaux de la forme simplifiée : ' + bg + ' porte(s) (pour toutes les sorties du schéma : ' + gc.total + ')']);
       blk.appendChild(h('table.eqt', rows.map(([a, b]) => h('tr', h('th', a), h('td', b)))));
-      blk.appendChild(h('div.small', { style: { marginTop: '4px' } }, h('button.small', { onclick: () => app.openKarnaugh(o.name) }, '→ Tableau de Karnaugh'), ' ', h('button.small', { onclick: () => app.designer.importCircuit() || app.openDock('designer') }, '→ Concepteur')));
+      blk.appendChild(h('div.small', { style: { marginTop: '4px' } }, h('button.small', { title: 'TD : mintermes, maxtermes, Σ et Π', onclick: () => { const td = NS.SCENARIOS.find(x => x.id === 'td_canoniques'); if (td && confirm('Ouvrir le TD remplace le schéma actuel. Continuer ?')) app.loadScenario(td); } }, '📘 Comprendre ces formes (TD)'), ' ', h('button.small', { onclick: () => app.openKarnaugh(o.name) }, '→ Tableau de Karnaugh'), ' ', h('button.small', { onclick: () => app.designer.importCircuit() || app.openDock('designer') }, '→ Concepteur')));
       this.body.appendChild(blk);
     });
   }

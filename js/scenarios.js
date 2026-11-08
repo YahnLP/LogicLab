@@ -21,6 +21,8 @@ NS.makeCtx = function (circuit) {
   const ctx = {
     c, sim, tp: null,
     part: r => c.byRef(r), has: r => !!c.byRef(r),
+    /* les broches (ref, nom) sont-elles reliées électriquement ? */
+    linked(ra, pa, rb, pb) { const A = c.byRef(ra), B = c.byRef(rb); if (!A || !B) return false; const n = c.nets(), ia = c.pinIndex(A, pa), ib = c.pinIndex(B, pb); if (ia < 0 || ib < 0) return false; return n.find(n.key({ c: A.id, p: ia })) === n.find(n.key({ c: B.id, p: ib })); },
     /* fixe un interrupteur puis lit un niveau */
     set(ref, v) { const p = c.byRef(ref); if (p) p.p.on = !!v; },
     val(ref, pin) { refresh(); return sim.refVal(ref, pin); },
@@ -114,6 +116,7 @@ NS.checkAnswer = function (q, a, ctx) {
     if (q.type === 'choice') { const ok = a === (typeof q.correct === 'function' ? q.correct(ctx) : q.correct); return { ok }; }
     if (q.type === 'part') { const ok = [].concat(typeof q.correct === 'function' ? q.correct(ctx) : q.correct).map(String).includes(String(a)); return { ok }; }
     if (q.type === 'text') return { ok: true };
+    if (q.type === 'text2') { const norm = x => String(x).split(/[^0-9]+/).filter(Boolean).map(Number).sort((a, b) => a - b).join(','), exp = typeof q.answer === 'function' ? q.answer(ctx) : q.answer; return { ok: norm(a) === norm(exp), msg: 'Listez les numéros de lignes séparés par des virgules.' }; }
     if (q.type === 'table') { const exp = typeof q.answer === 'function' ? q.answer(ctx) : q.answer; const ok = Array.isArray(a) && a.length === exp.length && exp.every((v, i) => String(a[i]) === String(v)); return { ok, msg: ok ? '' : 'Une ou plusieurs lignes sont fausses ou vides.' }; }
     if (q.type === 'expr') {
       const r = NS.tryParse(String(a)); if (r.err) return { ok: false, msg: 'Expression illisible : ' + r.err };

@@ -142,8 +142,9 @@ class App {
     const off = e => { if (!m.contains(e.target) && e.target !== anchor) { m.remove(); document.removeEventListener('pointerdown', off, true); } }; setTimeout(() => document.addEventListener('pointerdown', off, true), 0); return m;
   }
   openTPMenu(anchor) {
-    const cats = {}; NS.SCENARIOS.forEach(s => (cats[s.cat] = cats[s.cat] || []).push(s)); const box = h('div');
-    Object.keys(cats).forEach(c => { box.appendChild(h('h5', c)); cats[c].forEach(s => box.appendChild(h('button', { onclick: () => { $$('.menu').forEach(m => m.remove()); this.loadScenario(s); } }, s.title, h('small', s.level + ' · ' + s.duration + ' · ' + '★'.repeat(Math.min(3, s.diff)) + '☆'.repeat(Math.max(0, 3 - s.diff)))))); });
+    const box = h('div'); const KINDS = [['TD', 'TD — Travaux dirigés (guidés pas à pas, avec le cours)'], ['TP', 'TP — Travaux pratiques (peu de guidage, pour valider)']];
+    KINDS.forEach(([k, label]) => { const list = NS.SCENARIOS.filter(s => (s.kind || 'TP') === k); if (!list.length) return; box.appendChild(h('h4.menukind.' + k, label)); const cats = {}; list.forEach(s => (cats[s.cat] = cats[s.cat] || []).push(s));
+      Object.keys(cats).forEach(c => { box.appendChild(h('h5', c)); cats[c].forEach(s => box.appendChild(h('button', { onclick: () => { $$('.menu').forEach(m => m.remove()); this.loadScenario(s); } }, s.title, h('small', s.level + ' · ' + s.duration + ' · ' + '★'.repeat(Math.min(3, s.diff)) + '☆'.repeat(Math.max(0, 3 - s.diff)))))); }); });
     this.menu(anchor, box);
   }
   loadScenario(sc, variant) {
@@ -161,13 +162,15 @@ class App {
     const box = clear($('#tppane')); const tp = this.tp;
     if (!tp) { box.appendChild(h('div', h('h3', 'Sujet de TP'), h('p.muted', 'Aucun TP chargé. Utilisez le bouton « TP ▾ » pour choisir un sujet : portes logiques, tables de vérité, Karnaugh, conception de circuits, signaux…'), h('button.primary', { onclick: e => this.openTPMenu(e.target) }, 'Choisir un TP'))); return; }
     const sc = tp.sc;
-    box.appendChild(h('h3', sc.title)); box.appendChild(h('div.muted.small', sc.cat + ' · ' + sc.level + ' · ' + sc.duration + ' · ' + '★'.repeat(Math.min(3, sc.diff)) + '☆'.repeat(Math.max(0, 3 - sc.diff))));
+    box.appendChild(h('h3', h('span.kindbadge.' + (sc.kind || 'TP'), sc.kind || 'TP'), ' ' + sc.title)); box.appendChild(h('div.muted.small', sc.cat + ' · ' + sc.level + ' · ' + sc.duration + ' · ' + '★'.repeat(Math.min(3, sc.diff)) + '☆'.repeat(Math.max(0, 3 - sc.diff))));
     box.appendChild(h('p', { html: typeof sc.desc === 'function' ? sc.desc(tp.variant) : sc.desc }));
     if (sc.refs) box.appendChild(h('div.small.muted', 'Référentiel : ' + sc.refs));
     box.appendChild(h('div.tp-card', h('b', 'Objectifs'), h('ul', sc.objectives.map(o => h('li', { html: o })))));
     (sc.cours || []).forEach((k, i) => { const c = NS.COURS && NS.COURS[k]; if (c) box.appendChild(h('details.cours', { open: i === 0 }, h('summary', '📘 Apport de cours — ' + c.t), h('div.coursbody', { html: c.h }))); });
-    const steps = typeof sc.steps === 'function' ? sc.steps(tp.variant) : sc.steps;
-    box.appendChild(h('div.tp-card', h('b', 'Travail demandé'), h('ol', steps.map(s => h('li', { html: s })))));
+    const steps = (typeof sc.steps === 'function' ? sc.steps(tp.variant) : sc.steps) || [];
+    if (sc.stages) { box.appendChild(h('h4', 'Déroulé guidé : une étape à la fois')); tp.stageRes = tp.stageRes || {}; sc.stages.forEach((st, i) => box.appendChild(this.stageEl(st, i))); }
+    else if (steps.length) box.appendChild(h('div.tp-card', h('b', 'Travail demandé'), h('ol', steps.map(s => h('li', { html: s })))));
+    if ((sc.kind || 'TP') === 'TP' && sc.td) { const td = NS.SCENARIOS.find(x => x.id === sc.td); if (td) box.appendChild(h('div.tp-card.rappel', 'Besoin d\'un rappel de cours ou d\'un guidage pas à pas ? ', h('button', { onclick: () => this.loadScenario(td) }, 'Ouvrir le TD « ' + td.title + ' »'), h('div.small.muted', 'Attention : ouvrir le TD remplace le schéma actuel.'))); }
     if (sc.questions && sc.questions.length) {
       box.appendChild(h('h4', 'Questions'));
       sc.questions.forEach((q, i) => box.appendChild(this.questionEl(q, i)));
@@ -177,6 +180,16 @@ class App {
     const cb = h('div#tpchecks'); box.appendChild(cb); if (tp.results) this.showChecks(cb, tp.results);
     box.appendChild(h('div', { style: { display: 'flex', gap: '6px', flexWrap: 'wrap', margin: '8px 0' } }, h('button.primary', { onclick: () => this.runChecks() }, '✔ Vérifier mon travail'), h('button', { onclick: () => this.restartTP() }, sc.variants ? (sc.variantLabel || '↻ Autre variante') : '↻ Recommencer'), h('button', { onclick: () => this.showCorrection() }, '📖 Correction')));
     this._corr = h('div#tpcorr'); box.appendChild(this._corr);
+  }
+  stageEl(st, i) {
+    const tp = this.tp, res = tp.stageRes[i]; const card = h('div.stage' + (res === undefined ? '' : res.ok ? '.ok' : '.ko'));
+    card.appendChild(h('div.stagehead', h('span.stagen', String(i + 1)), h('b', st.t)));
+    if (st.learn) card.appendChild(h('div.learn', h('b', '💡 À comprendre'), h('div', { html: st.learn })));
+    if (st.do) card.appendChild(h('div.todo', h('b', '🛠 À faire'), h('div', { html: st.do })));
+    if (st.hint) card.appendChild(h('details.hint', h('summary', 'Un coup de pouce'), h('div', { html: st.hint })));
+    if (st.check) { card.appendChild(h('button', { onclick: () => { const r = NS.evalChecks({ checks: [st.check] }, this.circuit, tp)[0]; tp.stageRes[i] = r; card.replaceWith(this.stageEl(st, i)); } }, '✔ Valider cette étape'));
+      if (res) card.appendChild(h('div.small.stageres', res.ok ? '✔ Étape réussie : ' + st.check.label : '✘ Pas encore : ' + (st.fail || st.check.label))); }
+    return card;
   }
   ctx() { const c2 = NS.deserialize(NS.serialize(this.circuit)); const x = NS.makeCtx(c2); x.tp = this.tp; return x; }
   questionEl(q, i) {
@@ -190,6 +203,7 @@ class App {
     }
     else if (q.type === 'expr') row.appendChild(h('div', this.exprInput(q, i)));
     else row.appendChild(h('div', h('input', { type: 'text', value: this.answers[i] === undefined ? '' : this.answers[i], onchange: e => { this.answers[i] = e.target.value; } }), ' ', h('span.muted', q.unit || '')));
+    if (q.help && this.tp.sc.kind === 'TD') row.appendChild(h('div.qhelp', { html: '💡 ' + q.help }));
     if (res !== undefined) row.appendChild(h('div.small', res.ok ? '✔ Correct' : '✘ Incorrect' + (res.msg ? ' — ' + res.msg : q.hint ? ' — ' + q.hint : '')));
     return row;
   }
