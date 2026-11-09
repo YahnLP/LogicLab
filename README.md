@@ -21,7 +21,7 @@ Deux types de séances :
 - **TD** (travaux dirigés) : déroulé **guidé en étapes**. Chaque étape explique la notion (« À comprendre »), donne la consigne (« À faire »), un coup de pouce, et se **valide** seule. Questions avec aide.
 - **TP** (travaux pratiques) : cahier des charges seul, **sans cours ni pas à pas**, validation automatique du montage et des réponses. Chaque TP renvoie vers le TD correspondant.
 
-**TD (13)** : `td_premier`, `td_et_ou`, `td_inverses`, `td_lire`, `td_equ_schema`, `td_canoniques` (Σ, Π, mintermes, maxtermes), `td_demorgan`, `td_karnaugh3`, `td_alarme`, `td_generateur`, `td_div2`, `td_portail` (problème complet à 2 sorties)
+**TD (12)** : `td_premier`, `td_et_ou`, `td_inverses`, `td_lire`, `td_equ_schema`, `td_canoniques` (Σ, Π, mintermes, maxtermes), `td_demorgan`, `td_karnaugh3`, `td_alarme`, `td_generateur`, `td_div2`, `td_portail` (problème complet à 2 sorties)
 
 **TP (30, avec variantes)**
 1 · Portes logiques : `premier`, `et_ou`, `inverses`, `inconnue`
