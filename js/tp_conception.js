@@ -6,6 +6,7 @@ const CAT = '4 · Conception', LV = 'Bac Pro CIEL (première / terminale)';
 const V3 = ['A', 'B', 'C'];
 
 /* fabrique de TP : spec = { id, title, diff, duration, intro, vars, desc:{}, outs:[{name, f (expression) ou values, desc, kind, params}], maxGates, minimal, steps, correction } */
+NS.design = design;
 function design(s) {
   const vars = s.vars, values = s.outs.map(o => o.values || NS.tt(NS.parse(o.f), vars));
   const outSpec = () => s.outs.map((o, i) => ({ name: o.name, values: values[i] }));
@@ -18,8 +19,8 @@ function design(s) {
   });
   (s.extra || []).forEach(q => questions.push(q));
   regScenario({
-    id: s.id, cat: CAT, diff: s.diff, title: s.title, level: LV, duration: s.duration, refs: s.refs, cours: ['conception', 'karnaugh'],
-    desc: s.intro + '<ul>' + vars.map(v => '<li><b>' + v + '</b> : ' + s.desc[v] + '</li>').join('') + s.outs.map(o => '<li><b>' + o.name + '</b> : ' + o.desc + '</li>').join('') + '</ul>',
+    id: s.id, cat: s.cat || CAT, diff: s.diff, title: s.title, level: LV, duration: s.duration, refs: s.refs, cours: ['conception', 'karnaugh'],
+    desc: s.intro + '<ul>' + vars.map(v => '<li><b>' + v + '</b> : ' + s.desc[v] + '</li>').join('') + s.outs.map(o => '<li><b>' + o.name + '</b> : ' + o.desc + '</li>').join('') + '</ul>' + (s.rules ? '<p><b>Comportement attendu :</b></p><ul>' + s.rules.map(r => '<li>' + r + '</li>').join('') + '</ul>' : ''),
     objectives: ['Traduire un cahier des charges en table de vérité', 'Obtenir une équation simple (Karnaugh)', 'Câbler puis tester toutes les combinaisons'].concat(s.obj || []),
     steps: s.steps || ['Écrivez la table de vérité de la (des) sortie(s) à partir de l\'énoncé.', 'Simplifiez (Karnaugh dans l\'onglet dédié).', 'Dessinez et câblez le schéma avec peu de portes.', 'Testez les ' + (1 << vars.length) + ' combinaisons ; vous pouvez comparer avec l\'onglet <b>Concepteur</b>.'],
     questions,
@@ -69,5 +70,42 @@ design({
   outs: [{ name: 'S1', f: 'A⊕B⊕C', desc: 'somme' }, { name: 'S2', f: 'A·B + C·(A⊕B)', desc: 'retenue sortante' }], maxGates: 5, minimal: false,
   correction: () => '<p>S1 = A ⊕ B ⊕ C (deux OU exclusif) ; S2 = A·B + C·(A ⊕ B) (deux ET et un OU). Total : 5 portes, en réutilisant A ⊕ B.</p>',
   extra: [{ q: 'Combien de portes au minimum avec cette méthode (2 OU exclusif, 2 ET, 1 OU) ?', answer: () => 5, tol: 0 }]
+});
+
+/* ---- problèmes : on décrit ce que l'on veut obtenir sur les sorties, l'élève conçoit les circuits */
+const PB = '6 · Problèmes à résoudre';
+design({
+  id: 'portail', cat: PB, title: 'Problème : portail automatique', diff: 2, duration: '1 h 15', refs: 'Problème à plusieurs sorties ; réutilisation d\'un signal', vars: V3,
+  intro: 'Un portail motorisé s\'ouvre avec une télécommande. Concevez la logique qui commande le <b>moteur d\'ouverture</b> (S1) et le <b>gyrophare</b> (S2).',
+  desc: { A: 'télécommande : ordre d\'ouverture (1 = bouton appuyé)', B: 'cellule : obstacle détecté (1 = obstacle)', C: 'fin de course : portail déjà ouvert (1 = ouvert)' },
+  outs: [{ name: 'S1', f: 'A·!B·!C', desc: 'moteur d\'ouverture (1 = il tourne)' }, { name: 'S2', f: 'A·!B·!C + B', desc: 'gyrophare (1 = allumé)' }],
+  rules: ['Le moteur tourne seulement s\'il y a un ordre d\'ouverture, <b>sans obstacle</b> et si le portail <b>n\'est pas déjà ouvert</b>.', 'Le gyrophare est allumé quand le moteur tourne <b>ou</b> quand un obstacle est détecté.'],
+  maxGates: 4, minimal: false,
+  extra: [{ q: 'Combien de lignes contient la table de vérité d\'un montage à 3 entrées ?', answer: () => 8, tol: 0 }]
+});
+design({
+  id: 'cafe', cat: PB, title: 'Problème : distributeur de boissons', diff: 3, duration: '1 h 30', refs: 'Problème à trois sorties ; exclusion mutuelle', vars: V3,
+  intro: 'Un distributeur propose un café ou un thé. Concevez la logique des deux distributions (S1 café, S2 thé) et d\'un voyant d\'erreur (S3).',
+  desc: { A: 'monnaie suffisante (1 = oui)', B: 'bouton « café » appuyé', C: 'bouton « thé » appuyé' },
+  outs: [{ name: 'S1', f: 'A·B·!C', desc: 'distribue un café' }, { name: 'S2', f: 'A·C·!B', desc: 'distribue un thé' }, { name: 'S3', f: 'B·C + !A·(B+C)', desc: 'voyant d\'erreur' }],
+  rules: ['Une boisson n\'est servie que si la monnaie est suffisante <b>et</b> qu\'<b>un seul</b> bouton est appuyé.', 'Le voyant d\'erreur s\'allume si les <b>deux boutons</b> sont appuyés ensemble, ou si l\'on appuie sur un bouton <b>sans monnaie suffisante</b>.', 'Rien ne se passe si aucun bouton n\'est appuyé.'],
+  maxGates: 9, minimal: false
+});
+design({
+  id: 'monte_charge', cat: PB, title: 'Problème : monte-charge sécurisé', diff: 3, duration: '1 h 30', refs: 'Problème à 4 entrées et 3 sorties ; priorités de sécurité', vars: ['A', 'B', 'C', 'D'],
+  intro: 'Un monte-charge est commandé par deux boutons. Concevez la commande du moteur de montée (S1), du moteur de descente (S2) et de l\'avertisseur de surcharge (S3).',
+  desc: { A: 'porte fermée (1 = fermée)', B: 'charge acceptable (1 = pas de surcharge)', C: 'bouton « monter »', D: 'bouton « descendre »' },
+  outs: [{ name: 'S1', f: 'A·B·C·!D', desc: 'moteur de montée' }, { name: 'S2', f: 'A·D·!C', desc: 'moteur de descente' }, { name: 'S3', f: '!B·(C+D)', desc: 'avertisseur de surcharge' }],
+  rules: ['On ne monte que si la porte est fermée, la charge est acceptable, et que <b>seul</b> le bouton « monter » est appuyé.', 'On peut descendre porte fermée avec <b>seulement</b> le bouton « descendre » (même en surcharge, pour décharger).', 'L\'avertisseur sonne en cas de surcharge dès qu\'un bouton est appuyé.'],
+  maxGates: 11, minimal: false
+});
+design({
+  id: 'comparateur', cat: PB, title: 'Problème : comparateur de deux nombres de 2 bits', diff: 3, duration: '1 h 45', refs: 'Comparateur binaire ; fonctions à 4 variables', vars: ['A', 'B', 'C', 'D'],
+  intro: 'Deux nombres de 2 bits sont comparés : X = A B (A poids fort) et Y = C D (C poids fort). Concevez la sortie « égaux » (S1) et la sortie « X plus grand que Y » (S2).',
+  desc: { A: 'poids 2 de X', B: 'poids 1 de X', C: 'poids 2 de Y', D: 'poids 1 de Y' },
+  outs: [{ name: 'S1', values: [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1], desc: 'X = Y' }, { name: 'S2', values: [0, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 0, 1, 1, 1, 0], desc: 'X > Y' }],
+  rules: ['S1 = 1 quand X et Y sont égaux (0 et 0, 1 et 1, 2 et 2, 3 et 3).', 'S2 = 1 quand X est strictement plus grand que Y (par exemple X = 2 et Y = 1).'],
+  maxGates: 16, minimal: false,
+  extra: [{ q: 'Combien de combinaisons des entrées donnent S1 = 1 ?', answer: () => 4, tol: 0 }]
 });
 })(typeof window !== 'undefined' ? window : globalThis);

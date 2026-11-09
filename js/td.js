@@ -134,6 +134,23 @@ td('div2', {
 });
 
 
+
+td('portail', {
+  title: 'TD — Résoudre un problème : du cahier des charges au circuit', duration: '1 h 30', diff: 2,
+  desc: '<p>Ici, on ne vous dit pas quel circuit faire : on vous dit <b>ce que l\'on veut obtenir sur les sorties</b>. Vous suivez la démarche complète sur un problème à <b>deux sorties</b> : un portail automatique avec son moteur (S1) et son gyrophare (S2).</p>',
+  obj: ['Traduire des règles en français en table de vérité', 'Traiter plusieurs sorties', 'Réutiliser une sortie pour en fabriquer une autre', 'Tester le circuit sur des situations réelles'], cours: ['conception'],
+  stages: [
+    { t: 'Lire l\'énoncé et nommer les signaux', learn: '<p>Un problème de logique se lit en <b>deux colonnes</b> : ce que l\'on <b>sait</b> (les entrées : capteurs, boutons) et ce que l\'on <b>veut commander</b> (les sorties : moteur, voyant). Pour chaque signal on précise <b>ce que veut dire 1</b>.</p><p>Ici : A = ordre d\'ouverture (1 = bouton appuyé), B = obstacle (1 = obstacle détecté), C = portail déjà ouvert (1 = ouvert) ; S1 = moteur (1 = il tourne), S2 = gyrophare (1 = allumé).</p>', do: 'Relisez les deux règles du « Comportement attendu » et soulignez, dans chacune, les mots <b>ET</b>, <b>OU</b> et <b>pas</b> : ils donnent déjà la structure du circuit.' },
+    { t: 'Écrire la table de vérité de S1', learn: '<p>Pour une sortie, on parcourt les <b>8 combinaisons</b> et on se demande : « la règle est-elle satisfaite ? ». <b>S1</b> = « ordre d\'ouverture <b>ET</b> pas d\'obstacle <b>ET</b> pas déjà ouvert » : il faut A = 1, B = <b>0</b>, C = <b>0</b>. Une seule combinaison convient : A B C = 1 0 0, ligne n° 4.</p>', do: 'Remplissez la table de S1 (question 1) : un seul 1.' },
+    { t: 'Écrire la table de S2', learn: '<p><b>S2</b> = « le moteur tourne <b>OU</b> il y a un obstacle ». Il vaut donc 1 dans tous les cas où <b>S1 = 1</b> et dans tous ceux où <b>B = 1</b>. Les lignes où B = 1 sont les n° 2, 3, 6 et 7 ; avec la ligne 4 cela fait 5 lignes à 1.</p>', do: 'Remplissez la table de S2 (question 2).' },
+    { t: 'Les équations', learn: '<p>Un seul 1 dans la table donne un <b>seul produit</b> : <b>S1 = A·!B·!C</b>.</p><p>Pour S2, la règle dit « S1 <b>OU</b> B » : <b>S2 = S1 + B</b>. On peut donc <b>réutiliser la sortie S1</b> comme entrée de la porte de S2, sans recopier A·!B·!C : on économise des portes.</p>', do: 'Vérifiez que S1 + B donne bien votre table de S2.' },
+    { t: 'Câbler la sortie S1', learn: '<p>Il faut une porte <b>ET à 3 entrées</b> (réglez « Nombre d\'entrées » à 3 dans les Propriétés de la porte) et deux inverseurs pour !B et !C.</p>', do: 'Câblez S1 : A directement, B et C chacun à travers un NON, vers un ET à 3 entrées, puis vers la LED S1.', hint: 'Placez les deux NON, puis le ET, sélectionnez le ET et passez son nombre d\'entrées à 3.', check: { label: 'S1 = A·!B·!C', run: c => c.eq('S1', 'A·!B·!C') }, fail: 'Le moteur ne tourne pas dans les bonnes conditions : testez A = 1, B = 0, C = 0.' },
+    { t: 'Câbler S2 en réutilisant S1', learn: '<p>Une sortie peut alimenter d\'autres portes : tirez un fil depuis la sortie du ET (déjà reliée à S1) vers l\'entrée d\'une nouvelle porte <b>OU</b>, dont l\'autre entrée reçoit B.</p>', do: 'Ajoutez un OU : une entrée reliée à la sortie de la porte ET (S1), l\'autre à B ; sa sortie va à la LED S2. Au total <b>4 portes</b>.', check: { label: 'S2 = S1 + B avec 4 portes au plus', run: c => c.eq('S2', 'A·!B·!C + B') && c.nGates() <= 4 }, fail: 'Vérifiez S2 : le gyrophare doit être allumé si le moteur tourne ou si B = 1. Au plus 4 portes.' },
+    { t: 'Tester sur des situations réelles', learn: '<p>On valide un circuit avec des <b>scénarios</b> : on met les entrées dans la situation décrite et on compare à ce qu\'on attend.</p>', do: '<ul><li>Ordre d\'ouverture, rien d\'autre (A = 1, B = 0, C = 0) : moteur et gyrophare allumés.</li><li>Ordre d\'ouverture avec obstacle (1, 1, 0) : moteur éteint, gyrophare allumé.</li><li>Portail déjà ouvert (1, 0, 1) : tout éteint.</li></ul>' }],
+  help: ['Une seule ligne vérifie toutes les conditions.', 'S2 vaut 1 si S1 = 1 ou si B = 1.', 'Trois entrées : 2 × 2 × 2 lignes.'],
+  correction: '<p>S1 = A·!B·!C (un seul 1 dans la table). S2 = S1 + B = A·!C + B après simplification. Avec réutilisation de S1, le circuit tient en 4 portes : deux NON, un ET à 3 entrées, un OU.</p>'
+});
+
 /* ---- TD spécifique : lire les formes canoniques de l'onglet Équations (Σ, Π, mintermes, maxtermes) */
 SC.push({
   id: 'td_canoniques', cat: '2 · Tables et équations', kind: 'TD', diff: 2, title: 'TD — Comprendre Σ, Π, mintermes et maxtermes', level: 'Bac Pro CIEL (première)', duration: '1 h', dock: 'eq',
@@ -175,7 +192,7 @@ SC.push({
 /* ---- les TP : plus de cours, plus de pas à pas ; renvoi vers le TD le plus proche */
 const LINK = { premier: 'td_premier', et_ou: 'td_et_ou', inverses: 'td_inverses', inconnue: 'td_inverses', lire: 'td_lire', suivre: 'td_lire', depannage: 'td_lire', equ_schema: 'td_equ_schema',
   demorgan: 'td_demorgan', tout_nand: 'td_demorgan', simplifier: 'td_demorgan', karnaugh3: 'td_karnaugh3', karnaugh4: 'td_karnaugh3', indifferents: 'td_karnaugh3',
-  alarme: 'td_alarme', pompe: 'td_alarme', vote: 'td_alarme', va_et_vient: 'td_alarme', demi_add: 'td_alarme', add_complet: 'td_alarme', generateur: 'td_generateur', canoniques: 'td_canoniques', horloges: 'td_generateur', combinaisons: 'td_generateur', div2: 'td_div2', compteur: 'td_div2' };
+  alarme: 'td_alarme', pompe: 'td_alarme', vote: 'td_alarme', va_et_vient: 'td_alarme', demi_add: 'td_alarme', add_complet: 'td_alarme', generateur: 'td_generateur', portail: 'td_portail', cafe: 'td_portail', monte_charge: 'td_portail', comparateur: 'td_portail', canoniques: 'td_canoniques', horloges: 'td_generateur', combinaisons: 'td_generateur', div2: 'td_div2', compteur: 'td_div2' };
 SC.forEach(s => { if (s.kind === 'TD') return; s.kind = 'TP'; s.cours = []; s.steps = []; s.td = LINK[s.id]; });
 /* les TD passent en tête dans l'ordre de la liste */
 SC.sort((a, b) => (a.kind === 'TD' ? 0 : 1) - (b.kind === 'TD' ? 0 : 1));
