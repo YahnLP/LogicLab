@@ -21,14 +21,15 @@ Deux types de séances :
 - **TD** (travaux dirigés) : déroulé **guidé en étapes**. Chaque étape explique la notion (« À comprendre »), donne la consigne (« À faire »), un coup de pouce, et se **valide** seule. Questions avec aide.
 - **TP** (travaux pratiques) : cahier des charges seul, **sans cours ni pas à pas**, validation automatique du montage et des réponses. Chaque TP renvoie vers le TD correspondant.
 
-**TD (11)** : `td_premier`, `td_et_ou`, `td_inverses`, `td_lire`, `td_equ_schema`, `td_canoniques` (Σ, Π, mintermes, maxtermes), `td_demorgan`, `td_karnaugh3`, `td_alarme`, `td_generateur`, `td_div2`
+**TD (13)** : `td_premier`, `td_et_ou`, `td_inverses`, `td_lire`, `td_equ_schema`, `td_canoniques` (Σ, Π, mintermes, maxtermes), `td_demorgan`, `td_karnaugh3`, `td_alarme`, `td_generateur`, `td_div2`, `td_portail` (problème complet à 2 sorties)
 
-**TP (26, avec variantes)**
+**TP (30, avec variantes)**
 1 · Portes logiques : `premier`, `et_ou`, `inverses`, `inconnue`
 2 · Tables et équations : `lire`, `canoniques`, `equ_schema`, `suivre`, `depannage`
 3 · Boole et Karnaugh : `demorgan`, `tout_nand`, `simplifier`, `karnaugh3`, `karnaugh4`, `indifferents`
 4 · Conception : `alarme`, `pompe`, `vote`, `va_et_vient`, `demi_add`, `add_complet`
 5 · Signaux et bascules : `generateur`, `horloges`, `combinaisons`, `div2`, `compteur`
+6 · Problèmes à résoudre (on décrit les sorties voulues, l'élève conçoit les circuits) : `portail`, `cafe`, `monte_charge`, `comparateur`
 
 Chaque séance : sujet, objectifs, questions (table à remplir, équation à saisir, QCM, valeurs), critères vérifiés automatiquement sur le schéma, correction avec bouton « Appliquer la solution ».
 
